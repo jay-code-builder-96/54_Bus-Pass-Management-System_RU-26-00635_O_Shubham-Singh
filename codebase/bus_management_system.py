@@ -1,7 +1,3 @@
-
-# Bus Pass Management System
-# Project Statement No. 54
-
 import os
 
 FILE = "buspass.txt"
