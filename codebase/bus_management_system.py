@@ -1,5 +1,4 @@
 # Bus Pass Management System (PS No. 54)
-# Concepts: Lists, Dictionaries, Functions, File Handling
 
 FILE_NAME = "buspass.txt"
 STUDENT_DISCOUNT = 0.25
