@@ -29,17 +29,21 @@ Passes are saved in a file, so the data is kept even after the program closes.
 2. Save the code as `bus_pass_system.py`.
 3. Open the terminal in that folder and run:
 
+```
 python bus_pass_system.py
+```
 
 The file `buspass.txt` is created automatically when the first pass is issued.
 
 ## Menu
 
+```
 1. Issue new pass
 2. Renew pass
 3. Search pass by ID
 4. View all passes
 5. Exit
+```
 
 ## Pass Types and Fees
 
@@ -53,17 +57,21 @@ Students get a 25% discount. Example: a Yearly pass for a student costs Rs. 3600
 
 ## Sample Run
 
+```
 Menu option: 1
 Name: Riya
 Route: Route 5
 Type: Monthly
 Category: General
 Pass issued. ID: BP101 | Riya | Route 5 | Monthly | Fee: Rs. 500 | Valid: 30 days
+```
 
 Invalid pass type:
 
+```
 Type: Weekly
 Invalid pass type. Choose Monthly, Quarterly or Yearly. Pass not issued.
+```
 
 ## Test Cases
 
@@ -78,14 +86,20 @@ Invalid pass type. Choose Monthly, Quarterly or Yearly. Pass not issued.
 
 Each line in `buspass.txt` is one pass:
 
+```
 ID | Name | Route | Type | Category | Fee | Days | Renewals
+```
 
 Example:
 
+```
 BP101 | Riya | Route 5 | Monthly | General | 500 | 30 | 0
+```
 
 ## Project Files
 
+```
 bus_pass_system.py   # main program
 buspass.txt          # saved passes (created automatically)
 README.md            # project description
+```
