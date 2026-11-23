@@ -1,199 +1,176 @@
-import os
+# Bus Pass Management System (PS No. 54)
+# Concepts: Lists, Dictionaries, Functions, File Handling
 
-FILE = "buspass.txt"
+FILE_NAME = "buspass.txt"
+STUDENT_DISCOUNT = 0.25
 
-# Pass types and their fees
+# Pass types with fee and validity
 PASS_TYPES = {
-    "Monthly": (30, 500),
-    "Quarterly": (90, 1350),
-    "Yearly": (365, 4800)
+    "Monthly": {"fee": 500, "days": 30},
+    "Quarterly": {"fee": 1350, "days": 90},
+    "Yearly": {"fee": 4800, "days": 365},
 }
-
 CATEGORIES = ["General", "Student"]
 
+# List of all passes
+passes = []
 
-# Load saved passes from file
-def load_passes():
-    passes = []
-
-    if os.path.exists(FILE):
-        with open(FILE, "r") as f:
-            for line in f:
-                p = [x.strip() for x in line.split("|")]
-
-                if len(p) >= 5 and p[3] in PASS_TYPES:
-                    try:
-                        fee = float(p[4].replace("Rs.", "").strip())
-                        category = p[5] if len(p) > 5 else "General"
-
-                        passes.append({
-                            "id": p[0],
-                            "name": p[1],
-                            "route": p[2],
-                            "type": p[3],
-                            "fee": fee,
-                            "category": category
-                        })
-                    except ValueError:
-                        continue
-
-    return passes
-
-
-# Save passes in file
-def save_passes(passes):
-    with open(FILE, "w") as f:
-        for p in passes:
-            f.write(
-                f'{p["id"]} | {p["name"]} | {p["route"]} | '
-                f'{p["type"]} | Rs. {p["fee"]:g} | {p["category"]}\n'
-            )
-
-
-# Generate pass ID
-def new_id(passes):
-    numbers = []
-
-    for p in passes:
-        if p["id"].startswith("BP") and p["id"][2:].isdigit():
-            numbers.append(int(p["id"][2:]))
-
-    return "BP" + str(max(numbers, default=100) + 1)
-
-
-# Get passenger details
-def get_details():
-    name = input("Enter name: ").strip()
-    route = input("Enter route: ").strip()
-    kind = input("Enter type (Monthly/Quarterly/Yearly): ").strip().title()
-    category = input("Enter category (General/Student): ").strip().title()
-
-    if not name or not route:
-        print("Name and route cannot be empty.")
-        return None
-
-    if kind not in PASS_TYPES:
-        print("Invalid pass type. Choose Monthly, Quarterly or Yearly.")
-        return None
-
-    if category not in CATEGORIES:
-        print("Invalid category. Choose General or Student.")
-        return None
-
-    days, fee = PASS_TYPES[kind]
-
+# Calculate fee (25% discount for students)
+def calculate_fee(pass_type, category):
+    fee = PASS_TYPES[pass_type]["fee"]
     if category == "Student":
-        fee = fee * 0.75
+        fee = fee * (1 - STUDENT_DISCOUNT)
+    return int(round(fee))
 
-    return {
-        "name": name,
-        "route": route,
-        "type": kind,
-        "category": category,
-        "fee": fee,
-        "validity": days
-    }
+# Generate the next pass ID
+def generate_id():
+    if not passes:
+        return "BP101"
+    # Last number + 1
+    return "BP" + str(max(int(p["id"][2:]) for p in passes) + 1)
 
+# Return a pass as one line of text
+def format_pass(p):
+    return (p["id"] + " | " + p["name"] + " | " + p["route"] + " | "
+            + p["type"] + " | Fee: Rs. " + str(p["fee"]))
 
-# Display a pass
-def show_pass(p):
-    print(
-        f'{p["id"]} | {p["name"]} | {p["route"]} | '
-        f'{p["type"]} | Fee: Rs. {p["fee"]:g}'
-    )
+# Check the pass type or category
+def validate(text, valid_options):
+    text = text.strip().capitalize()
+    return text if text in valid_options else None
 
+# Find a pass by ID
+def find_pass(pass_id):
+    for p in passes:
+        if p["id"].upper() == pass_id.strip().upper():
+            return p
+    return None
+
+# Save all passes to the file
+def save_passes():
+    try:
+        with open(FILE_NAME, "w") as f:
+            for p in passes:
+                line = " | ".join([p["id"], p["name"], p["route"], p["type"],
+                                   p["category"], str(p["fee"]),
+                                   str(p["days"]), str(p["renewals"])])
+                f.write(line + "\n")
+    except IOError:
+        print("Error: could not save passes to file.")
+
+# Load passes from the file
+def load_passes():
+    try:
+        with open(FILE_NAME, "r") as f:
+            for line in f:
+                parts = [x.strip() for x in line.strip().split("|")]
+                # Skip invalid lines
+                if len(parts) < 5 or parts[3] not in PASS_TYPES:
+                    continue
+                if len(parts) >= 8:
+                    # Full format
+                    category, fee = parts[4], int(parts[5])
+                    days, renewals = int(parts[6]), int(parts[7])
+                else:
+                    # Short format
+                    category = "General"
+                    fee = int(parts[4].replace("Rs.", "").strip())
+                    days, renewals = PASS_TYPES[parts[3]]["days"], 0
+                passes.append({"id": parts[0], "name": parts[1],
+                               "route": parts[2], "type": parts[3],
+                               "category": category, "fee": fee,
+                               "days": days, "renewals": renewals})
+    except FileNotFoundError:
+        pass  # File not found
+    except (IOError, ValueError):
+        print("Warning: some saved data could not be read.")
 
 # Issue a new pass
-def issue_pass(passes):
-    p = get_details()
+def issue_pass():
+    name = input("Name: ").strip()
+    route = input("Route: ").strip()
+    pass_type = validate(input("Type: "), PASS_TYPES)
+    category = validate(input("Category: "), CATEGORIES)
 
-    if p is None:
-        print("Pass not issued.")
+    # Check input
+    if not name or not route:
+        print("Name and route cannot be empty. Pass not issued.")
+        return
+    if pass_type is None:
+        print("Invalid pass type. Choose Monthly, Quarterly or Yearly. "
+              "Pass not issued.")
+        return
+    if category is None:
+        print("Invalid category. Choose General or Student. Pass not issued.")
         return
 
-    p["id"] = new_id(passes)
-    passes.append(p)
-    save_passes(passes)
-
-    print(
-        f'Pass issued. ID: {p["id"]} | {p["name"]} | '
-        f'{p["route"]} | {p["type"]} | Fee: Rs. {p["fee"]:g} '
-        f'| Valid: {p["validity"]} days'
-    )
-
+    new_pass = {
+        "id": generate_id(), "name": name, "route": route,
+        "type": pass_type, "category": category,
+        "fee": calculate_fee(pass_type, category),
+        "days": PASS_TYPES[pass_type]["days"], "renewals": 0,
+    }
+    passes.append(new_pass)
+    save_passes()
+    print("Pass issued. ID: " + format_pass(new_pass)
+          + " | Valid: " + str(new_pass["days"]) + " days")
 
 # Renew an existing pass
-def renew_pass(passes):
-    pid = input("Enter pass ID to renew: ").strip().upper()
+def renew_pass():
+    p = find_pass(input("Enter pass ID to renew: "))
+    if p is None:
+        print("Pass not found.")
+        return
+    pass_type = validate(input("Renew as (Monthly/Quarterly/Yearly): "),
+                         PASS_TYPES)
+    if pass_type is None:
+        print("Invalid pass type. Choose Monthly, Quarterly or Yearly. "
+              "Pass not renewed.")
+        return
 
+    # Update the pass
+    p["type"] = pass_type
+    p["fee"] = calculate_fee(pass_type, p["category"])
+    p["days"] = PASS_TYPES[pass_type]["days"]
+    p["renewals"] += 1
+    save_passes()
+    print("Pass renewed. " + format_pass(p) + " | Valid: " + str(p["days"])
+          + " days | Renewals: " + str(p["renewals"]))
+
+# Search a pass by ID
+def search_pass():
+    p = find_pass(input("Enter pass ID: "))
+    print("Pass not found." if p is None else format_pass(p))
+
+# View all passes
+def view_all():
+    if not passes:
+        print("No passes issued yet.")
+        return
+    print("--- All Bus Passes ---")
     for p in passes:
-        if p["id"].upper() == pid:
-            details = get_details()
-
-            if details is None:
-                print("Pass not renewed.")
-                return
-
-            p.update(details)
-            save_passes(passes)
-
-            print("Pass renewed successfully.")
-            show_pass(p)
-            return
-
-    print("Pass ID not found.")
-
-
-# Search pass by ID
-def search_pass(passes):
-    pid = input("Enter pass ID to search: ").strip().upper()
-
-    for p in passes:
-        if p["id"].upper() == pid:
-            show_pass(p)
-            return
-
-    print("Pass not found.")
-
+        print(format_pass(p))
+    print("Total passes: " + str(len(passes)))
 
 # Main program
 def main():
-    passes = load_passes()
-
+    # Load saved passes
+    load_passes()
+    # Menu options
+    actions = {"1": issue_pass, "2": renew_pass,
+               "3": search_pass, "4": view_all}
     while True:
         print("\n===== BUS PASS MANAGEMENT SYSTEM =====")
-        print("1. Issue New Pass")
-        print("2. Renew Pass")
-        print("3. Search Pass")
-        print("4. View All Passes")
-        print("5. Exit")
-
-        choice = input("Enter your choice: ").strip()
-
-        if choice == "1":
-            issue_pass(passes)
-
-        elif choice == "2":
-            renew_pass(passes)
-
-        elif choice == "3":
-            search_pass(passes)
-
-        elif choice == "4":
-            if passes:
-                for p in passes:
-                    show_pass(p)
-            else:
-                print("No passes issued yet.")
-
-        elif choice == "5":
-            save_passes(passes)
-            print("Thank you for using the system!")
+        print("1. Issue new pass\n2. Renew pass\n3. Search pass by ID")
+        print("4. View all passes\n5. Exit")
+        choice = input("Menu option: ").strip()
+        if choice == "5":
+            print("Thank you. Goodbye!")
             break
-
+        elif choice in actions:
+            actions[choice]()
         else:
-            print("Invalid menu option. Try again.")
-
+            print("Invalid option. Please choose 1-5.")
 
 if __name__ == "__main__":
     main()
