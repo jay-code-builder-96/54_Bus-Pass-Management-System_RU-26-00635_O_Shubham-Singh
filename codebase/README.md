@@ -1,6 +1,6 @@
 # Bus Pass Management System
 
-A simple console application in Python 3 to issue and manage bus passes.
+A simple application to issue and manage bus passes.
 Passes are saved in a file, so the data is kept even after the program closes.
 
 **Project:** PS No. 54 | B.Tech Computer Science and Engineering, First Semester
