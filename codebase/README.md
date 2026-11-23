@@ -25,7 +25,7 @@ Passes are saved in a file, so the data is kept even after the program closes.
 
 ## How to Run
 
-1. Install Python 3.
+1. Write the code
 2. Save the code as `bus_pass_system.py`.
 3. Open the terminal in that folder and run:
 
